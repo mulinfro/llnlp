@@ -16,8 +16,12 @@ hp = hparams.parse.parse_args()
 
 tag2idx, idx2tag, num_tags = utils.load_crf_tags()
 
-train_batches, num_train_batches, num_sample = get_batch(hp.train_path, hp.batch_size, hp.max_seq_length, hp.vocab_file, hp.tag_mapping_file, do_lower_case = False)
-eval_batches,  num_eval_batches,  num_sample = get_batch(hp.test_path, hp.batch_size, hp.max_seq_length, hp.vocab_file, hp.tag_mapping_file, do_lower_case = False)
+train_batches, num_train_batches, num_sample = get_batch(hp.train_path, hp.batch_size,
+                                                hp.max_seq_length, hp.vocab_file,
+                                                hp.tag_mapping_file, do_lower_case = False)
+eval_batches,  num_eval_batches,  num_sample = get_batch(hp.test_path, hp.batch_size,
+                                                hp.max_seq_length, hp.vocab_file,
+                                                hp.tag_mapping_file, do_lower_case = False)
 
 iter = tf.data.Iterator.from_structure(train_batches.output_types, train_batches.output_shapes)
 xs, ys, ori_chars, ori_tags = iter.get_next()

@@ -32,3 +32,4 @@ class CrfLayer(tf.keras.layers.Layer):
         self.add_loss(tf.math.negative(tf.math.reduce_mean(log_likehood)))
 
         return trans
+

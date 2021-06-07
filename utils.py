@@ -40,3 +40,12 @@ def convert_to_unicode(text):
       raise ValueError("Unsupported string type: %s" % (type(text)))
   else:
     raise ValueError("Not running on Python2 or Python 3?")
+
+
+
+
+def load_json(json_file):
+  with open(json_file, "r") as f:
+    text = f.read().strip()
+    import json
+    return json.loads(text)

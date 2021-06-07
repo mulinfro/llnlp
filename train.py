@@ -29,14 +29,24 @@ xs, ys, ori_chars, ori_tags = iter.get_next()
 train_init_op = iter.make_initializer(train_batches)
 eval_init_op  = iter.make_initializer(eval_batches)
 
-initializer = tf.contrib.layers.xavier_initializer()
-max_seq_length = hp.max_seq_length
-
 
 train_seq = (hp.train_path)
 
-bproc.create_bert_model()
+bert_config = utils.load_json(hp.bert_config)
 
-crf_layer = CrfLayer(num_tags, max_seq_length, initializer)
+input_mask = tf.math.not_equal(xs, 0)
+
+bert_layer = bproc.create_bert_output_layer(bert_config = bert_config, 
+                        is_training = True, 
+                        input_ids = xs,
+                        input_mask = input_mask,
+                        seg_ids = None,
+                        layer_type = "last2",
+                        use_one_hot_embeddings = False)
+
+initializer = tf.contrib.layers.xavier_initializer()
+crf_layer = CrfLayer(num_tags, hp.max_seq_length, initializer)
+
 
 with tf.Session() as sess:
+    pass

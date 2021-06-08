@@ -15,7 +15,7 @@ class CrfLayer(tf.keras.layers.Layer):
             shape=(self.num_tags, self.num_tags),
             dtype = tf.float32,
             initializer = self.initializer,
-            name = "transision_weight"
+            name = "transition_weight"
         )
 
     def call(self, inputs, mask):
@@ -28,8 +28,8 @@ class CrfLayer(tf.keras.layers.Layer):
             sequence_lengths = seq_lengths,
             transition_params = self.transition_weight
         )
+        predict, viterbi_score = tf.contrib.crf.crf_decode(emissions, self.transition_weight , seq_lengths)
+        # self.add_loss(tf.math.negative(tf.math.reduce_mean()))
 
-        self.add_loss(tf.math.negative(tf.math.reduce_mean(log_likehood)))
-
-        return trans
+        return log_likehood, trans, predict
 

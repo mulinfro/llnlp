@@ -29,24 +29,47 @@ xs, ys, ori_chars, ori_tags = iter.get_next()
 train_init_op = iter.make_initializer(train_batches)
 eval_init_op  = iter.make_initializer(eval_batches)
 
-
-train_seq = (hp.train_path)
-
 bert_config = utils.load_json(hp.bert_config)
 
-input_mask = tf.math.not_equal(xs, 0)
 
-bert_layer = bproc.create_bert_output_layer(bert_config = bert_config, 
-                        is_training = True, 
-                        input_ids = xs,
-                        input_mask = input_mask,
-                        seg_ids = None,
-                        layer_type = "last2",
-                        use_one_hot_embeddings = False)
+all_steps = train_batches * hp.num_epochs
+num_warmup_steps = int(all_steps * hp.warmup_prop)
 
-initializer = tf.contrib.layers.xavier_initializer()
-crf_layer = CrfLayer(num_tags, hp.max_seq_length, initializer)
+training_mode = tf.placeholder_with_default(True, shape=())
+bert_crf_fn = BertCrf(bert_config, hp.layer_type, num_tags)
+loss, train_op, out_tags, transition_weight = bert_crf_fn.create_model(xs, training_mode, hp.dropout_rate, hp.lr, all_steps, num_warmup_steps)
 
+global_step = tf.train.get_or_create_global_step()
+train_summaries = None
 
+logging.info("# Session")
+saver = tf.train.Saver(max_to_keep = hp.num_epochs)
+sess.run(train_init_op)
 with tf.Session() as sess:
-    pass
+    ckpt = tf.train.latest_checkpoint(hp.logdir)
+    if ckpt is None:
+        logging.info("initial from scrtch")
+        sess.run(tf.global_variables_initializer())
+        utils.save_variable_specs(os.path.join(hp.logdir, "specs"))
+    else:
+        saver.restore(sess, ckpt)
+
+        
+    _gs = sess.run(global_step)
+    for i in tqdm(range(_gs, all_steps + 1)):
+
+        _, _gs, _summary = sess.run([train_op, global_step, train_summaries], feed_dict={training_mode: True})
+
+        if _gs and _gs % num_train_batches == 0:
+            epochs = _gs / num_train_batches
+            logging.info("Epoch %d is done"%epochs)
+
+            _loss = sess.run(loss, feed_dict={training_mode: False})  # train loss
+            sess.run(eval_init_op)
+            sess.run([out_tags, transition_weight], feed_dict={training_mode: False})
+
+
+            sess.run(train_init_op)
+
+
+        sess.run(loss)

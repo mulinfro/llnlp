@@ -5,8 +5,10 @@ import tensorflow as tf
 from hparams import Hparams
 from model.layers import CrfLayer
 import utils
-import model.bert_processer as bproc
-from data_load import get_batch
+import tqdm, os
+from model.bert_crf import BertCrf
+from data_load import get_batch, idx2token
+from vocab_manager import Vocab
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -44,8 +46,8 @@ train_summaries = None
 
 logging.info("# Session")
 saver = tf.train.Saver(max_to_keep = hp.num_epochs)
-sess.run(train_init_op)
 with tf.Session() as sess:
+    sess.run(train_init_op)
     ckpt = tf.train.latest_checkpoint(hp.logdir)
     if ckpt is None:
         logging.info("initial from scrtch")
@@ -61,14 +63,27 @@ with tf.Session() as sess:
         _, _gs, _summary = sess.run([train_op, global_step, train_summaries], feed_dict={training_mode: True})
 
         if _gs and _gs % num_train_batches == 0:
-            epochs = _gs / num_train_batches
-            logging.info("Epoch %d is done"%epochs)
+            epoch = _gs / num_train_batches
+            logging.info("Epoch %d is done"%epoch)
 
-            _loss = sess.run(loss, feed_dict={training_mode: False})  # train loss
+            _loss, _trans = sess.run([loss, transition_weight], feed_dict={training_mode: False})  # train loss
             sess.run(eval_init_op)
-            sess.run([out_tags, transition_weight], feed_dict={training_mode: False})
+            for i in range(num_eval_batches):
+                [_out_tag, _ori_chrs, _ori_tags] = sess.run([out_tags, _ori_chrs, _ori_tags], feed_dict={training_mode: False})
+                eval_tags = idx2token(_out_tag)
 
+            model_name = "bert_crf_E%d_%.3f"%(epoch, _loss)
+            logging.info("# write result")
+            evaled_tags_file = os.path.join(hp.logdir, model_name)
+            with open(evaled_tags_file, "w") as f:
+                for tags in eval_tags:
+                    f.write(" ".join(tags) + "\n")
 
+            logging.info("# save model")
+            ckpt_name = os.path.join(hp.logdir, model_name)
+            saver.save(sess, ckpt_name, global_step=_gs)
+
+            logging.info("# back to train")
             sess.run(train_init_op)
 
 

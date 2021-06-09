@@ -5,8 +5,8 @@ def load_vocab(vocab_file):
   vocab = collections.OrderedDict()
   index = 0
   with open(vocab_file, "r") as reader:
-    while True:
-      token = convert_to_unicode(reader.readline())
+    for line in reader.readlines():
+      token = convert_to_unicode(line)
       if not token:
         break
       token = token.strip()
@@ -50,7 +50,22 @@ class Vocab:
         self.idx2vocab_dict = reverse_vocab(self.vocab_dict)
 
     def idxes2vocabs(self, seqs):
-        res = [self.vocab_dict[seq] for seq in seqs]
+        res = [self.idx2vocab_dict[seq] for seq in seqs]
+        return res
+
+    def vocabs2idx(self, seqs, add_unk=False, do_lower_case=False):
+        res = []
+        for seq in seqs:
+            if do_lower_case and seq[0]!= "[" and seq[-1] != "]":
+                seq = seq.lower()
+
+            if seq not in self.vocab_dict:
+                seq = "##" + seq
+
+            if add_unk and seq not in self.vocab_dict:
+                seq = "[UNK]"
+            res.append(self.vocab_dict[seq])
+
         return res
 
     def batches2vocab(self, seq_of_seq):

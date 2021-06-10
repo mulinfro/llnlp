@@ -16,7 +16,9 @@ logging.basicConfig(level=logging.INFO)
 hparams = Hparams()
 hp = hparams.parse.parse_args()
 
-tag2idx, idx2tag, num_tags = utils.load_crf_tags()
+
+tag_vocab = Vocab(hp.tag_mapping_file)
+num_tags = len(tag_vocab.vocab_dict)
 
 train_batches, num_train_batches, num_sample = get_batch(hp.train_path, hp.batch_size,
                                                 hp.max_seq_length, hp.vocab_file,
@@ -33,16 +35,18 @@ eval_init_op  = iter.make_initializer(eval_batches)
 
 bert_config = utils.load_json(hp.bert_config)
 
-
 all_steps = train_batches * hp.num_epochs
 num_warmup_steps = int(all_steps * hp.warmup_prop)
 
 training_mode = tf.placeholder_with_default(True, shape=())
 bert_crf_fn = BertCrf(bert_config, hp.layer_type, num_tags)
-loss, train_op, out_tags, transition_weight = bert_crf_fn.create_model(xs, training_mode, hp.dropout_rate, hp.lr, all_steps, num_warmup_steps)
+loss, train_op, out_tags = bert_crf_fn.create_model(xs, training_mode, hp.dropout_rate, hp.lr, all_steps, num_warmup_steps)
 
 global_step = tf.train.get_or_create_global_step()
 train_summaries = None
+
+tf.summary.scalar("global_step", global_step)
+train_summary = tf.summary.merge_all()
 
 logging.info("# Session")
 saver = tf.train.Saver(max_to_keep = hp.num_epochs)
@@ -56,6 +60,7 @@ with tf.Session() as sess:
     else:
         saver.restore(sess, ckpt)
 
+    summary_writer = tf.summary.FileWriter(hp.logdir, sess.graph)
         
     _gs = sess.run(global_step)
     for i in tqdm(range(_gs, all_steps + 1)):
@@ -66,11 +71,13 @@ with tf.Session() as sess:
             epoch = _gs / num_train_batches
             logging.info("Epoch %d is done"%epoch)
 
-            _loss, _trans = sess.run([loss, transition_weight], feed_dict={training_mode: False})  # train loss
+            _summary, _loss = sess.run([train_summary, loss], feed_dict={training_mode: False})  # train loss
+            summary_writer.add_summary(_summary, _gs)
+
             sess.run(eval_init_op)
             for i in range(num_eval_batches):
-                [_out_tag, _ori_chrs, _ori_tags] = sess.run([out_tags, _ori_chrs, _ori_tags], feed_dict={training_mode: False})
-                eval_tags = idx2token(_out_tag)
+                [_out_tag, _ori_chrs, _ori_tags] = sess.run([out_tags, ori_chars, ori_tags], feed_dict={training_mode: False})
+                eval_tags = tag_vocab.batches2vocab(_out_tag)
 
             model_name = "bert_crf_E%d_%.3f"%(epoch, _loss)
             logging.info("# write result")
@@ -85,6 +92,5 @@ with tf.Session() as sess:
 
             logging.info("# back to train")
             sess.run(train_init_op)
-
 
         sess.run(loss)

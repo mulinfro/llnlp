@@ -1,7 +1,7 @@
 
 import tensorflow as tf
 from bert import modeling
-from layers import CrfLayer
+from model.layers import CrfLayer
 from bert import optimization
 
 class BertCrf:
@@ -33,7 +33,7 @@ class BertCrf:
             bert_output_layer = model.get_sequence_output()
 
         initializer = tf.contrib.layers.xavier_initializer()
-        crf_layer = CrfLayer(self.num_tags, hp.max_seq_length, initializer)
+        crf_layer = CrfLayer(self.num_tags, initializer)
 
         bert_output_layer = tf.layers.dropout(bert_output_layer, rate=dropout_rate, training=training_mode)
         linear = tf.keras.layers.Dense(self.num_tags, activation = None)
@@ -45,4 +45,7 @@ class BertCrf:
         # train_op = optimizer.minimize(loss, global_step = global_step)
         train_op = optimization.create_optimizer(loss, learning_rate, num_train_steps, num_warmup_steps, False)
 
-        return loss, train_op, out_tags, trans
+        tf.summary.scalar("loss", loss)
+        tf.summary.distribution("tansition", trans)
+
+        return loss, train_op, out_tags

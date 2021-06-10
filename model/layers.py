@@ -2,14 +2,12 @@
 import tensorflow as tf
 from tensorflow_addons.text import crf_log_likelihood, crf_decode
 
-
-
 class CrfLayer(tf.keras.layers.Layer):
 
-    def __init__(self, num_tags, max_seq_length, initializer, name = "crf", **kargs) -> None:
+    def __init__(self, num_tags, initializer, name = "crf", **kargs) -> None:
         super().__init__(name=name, **kargs)
         self.num_tags = num_tags
-        self.max_seq_length = max_seq_length
+        # self.max_seq_length = max_seq_length
         self.initializer = initializer
         self.transition_weight = self.add_weight(
             shape=(self.num_tags, self.num_tags),

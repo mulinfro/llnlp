@@ -11,6 +11,7 @@ class Hparams:
     parser.add_argument("--lr", default=0.0003, type=float, help="learning rate")
     parser.add_argument("--warmup_prop", default=0.5, type=float, help="warmup_prop")
     parser.add_argument("--num_epochs", default=20, type=int)
+    parser.add_argument("--max_seq_length", default=128, type=int, help="max seq length")
     parser.add_argument("--batch_size", default=64, type=int)
     parser.add_argument("--layer_type", default="last2", type=str)
     parser.add_argument("--dropout_rate", default=0.3, type=float, help="dropout rate")

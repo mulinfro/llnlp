@@ -54,11 +54,16 @@ def generate_fn(seq_datas):
         yield seq
 
 def input_fn(seq_datas, batch_size, shuffle):
+    print("fn 1")
     dataset = tf.data.Dataset.from_tensor_slices(seq_datas)
+    print("fn 2")
     if shuffle:
+        print("fn 3")
         dataset = dataset.shuffle(batch_size * 128)
 
+    print("fn 4")
     dataset = dataset.repeat()
+    print("fn 5")
     dataset = dataset.batch(batch_size).prefetch(8)
 
     return dataset
@@ -153,10 +158,12 @@ def get_batch(data_file, batch_size, max_seq_len, vocab_file, tag_mapping_file, 
     seqs = load_seq_data(data_file, max_seq_len)
     seq_idxs = token2idx(seqs, vocab_file, tag_mapping_file, do_lower_case)
 
+    print("nput fn", len(seq_idxs))
     dataset = input_fn(seq_idxs, batch_size, shuffle)
 
     samples = len(seqs)
     num_batches = calc_num_batches(samples, batch_size)
 
+    print("batches done", data_file)
     return dataset, num_batches, samples
 

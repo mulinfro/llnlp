@@ -14,12 +14,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 hparams = Hparams()
-hp = hparams.parse.parse_args()
+hp = hparams.parser.parse_args()
 
 
 tag_vocab = Vocab(hp.tag_mapping_file)
 num_tags = len(tag_vocab.vocab_dict)
 
+print("####### get batch")
 train_batches, num_train_batches, num_sample = get_batch(hp.train_path, hp.batch_size,
                                                 hp.max_seq_length, hp.vocab_file,
                                                 hp.tag_mapping_file, do_lower_case = False)
@@ -27,14 +28,20 @@ eval_batches,  num_eval_batches,  num_sample = get_batch(hp.test_path, hp.batch_
                                                 hp.max_seq_length, hp.vocab_file,
                                                 hp.tag_mapping_file, do_lower_case = False)
 
+
+print("####### init0")
 iter = tf.data.Iterator.from_structure(train_batches.output_types, train_batches.output_shapes)
 xs, ys, ori_chars, ori_tags = iter.get_next()
+
+print("####### init1")
 
 train_init_op = iter.make_initializer(train_batches)
 eval_init_op  = iter.make_initializer(eval_batches)
 
+print("####### init2")
 bert_config = utils.load_json(hp.bert_config)
 
+print("####### bert config")
 all_steps = train_batches * hp.num_epochs
 num_warmup_steps = int(all_steps * hp.warmup_prop)
 

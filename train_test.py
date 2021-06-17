@@ -20,7 +20,7 @@ hp = hparams.parser.parse_args()
 tag_vocab = Vocab(hp.tag_mapping_file)
 num_tags = len(tag_vocab.vocab_dict)
 
-print("####### get batch")
+print("####### get batch", hp.train_path, hp.test_path)
 train_batches, num_train_batches, num_sample = get_batch(hp.train_path, hp.batch_size,
                                                 hp.max_seq_length, hp.vocab_file,
                                                 hp.tag_mapping_file, do_lower_case = False)
@@ -28,28 +28,27 @@ eval_batches,  num_eval_batches,  num_sample = get_batch(hp.test_path, hp.batch_
                                                 hp.max_seq_length, hp.vocab_file,
                                                 hp.tag_mapping_file, do_lower_case = False)
 
+
 t_shape = tf.compat.v1.data.get_output_shapes(train_batches)
 t_types = tf.compat.v1.data.get_output_types(train_batches)
 
-print("####### init0")
-iter = tf.data.Iterator.from_structure(t_types, t_shape)
+iter = tf.compat.v1.data.Iterator.from_structure(t_types, t_shape)
 
-print("####### init1")
-train_init_op = iter.make_initializer(train_batches)
 eval_init_op  = iter.make_initializer(eval_batches)
+train_init_op = iter.make_initializer(train_batches)
 xs, ys, ori_chars, ori_tags = iter.get_next()
 
-print("####### init2")
 bert_config = utils.load_json(hp.bert_config)
 
-print("####### bert config")
+print("####### bert config", bert_config)
 all_steps = num_train_batches * hp.num_epochs
 num_warmup_steps = int(all_steps * hp.warmup_prop)
 
 #training_mode = tf.placeholder_with_default(True, shape=())
 training_mode = tf.keras.Input(name="training_mode", shape=(), dtype=tf.dtypes.bool)
 bert_crf_fn = BertCrf(bert_config, hp.layer_type, num_tags)
-loss, train_op, out_tags = bert_crf_fn.create_model(xs, training_mode, hp.dropout_rate, hp.lr, all_steps, num_warmup_steps)
+loss, train_op, out_tags = bert_crf_fn.create_model((xs, ys), training_mode, hp.dropout_rate, hp.lr, all_steps, num_warmup_steps)
+"""
 
 global_step = tf.train.get_or_create_global_step()
 train_summaries = None
@@ -103,3 +102,5 @@ with tf.Session() as sess:
             sess.run(train_init_op)
 
         sess.run(loss)
+
+"""

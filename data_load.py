@@ -158,7 +158,7 @@ def get_batch(data_file, batch_size, max_seq_len, vocab_file, tag_mapping_file, 
     seqs = load_seq_data(data_file, max_seq_len)
     seq_idxs = token2idx(seqs, vocab_file, tag_mapping_file, do_lower_case)
 
-    print("nput fn", len(seq_idxs))
+    print("input fn", len(seq_idxs), len(seq_idxs[0]), data_file)
     dataset = input_fn(seq_idxs, batch_size, shuffle)
 
     samples = len(seqs)

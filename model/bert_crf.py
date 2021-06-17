@@ -14,6 +14,7 @@ class BertCrf:
 
     def create_model(self, inputs, training_mode, dropout_rate,
                         learning_rate, num_train_steps, num_warmup_steps):
+        print(type(inputs), inputs)
         input_ids, tag_ids = inputs
         input_mask = tf.math.equal(input_ids, 0)
         model = modeling.BertModel(

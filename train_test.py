@@ -48,8 +48,9 @@ num_warmup_steps = int(all_steps * hp.warmup_prop)
 training_mode = tf.keras.Input(name="training_mode", shape=(), dtype=tf.dtypes.bool)
 bert_crf_fn = BertCrf(bert_config, hp.layer_type, num_tags)
 loss, train_op, out_tags = bert_crf_fn.create_model((xs, ys), training_mode, hp.dropout_rate, hp.lr, all_steps, num_warmup_steps)
-"""
 
+
+"""
 global_step = tf.train.get_or_create_global_step()
 train_summaries = None
 
